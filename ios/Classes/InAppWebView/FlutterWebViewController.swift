@@ -55,6 +55,9 @@ public class FlutterWebViewController: NSObject, FlutterPlatformView, Disposable
                                    userScripts: userScripts)
         }
         
+        webView!.backgroundColor = .clear;
+        webView!.isOpaque = false;
+
         let pullToRefreshSettings = PullToRefreshSettings()
         let _ = pullToRefreshSettings.parse(settings: pullToRefreshInitialSettings)
         let pullToRefreshControl = PullToRefreshControl(registrar: registrar, id: viewId, settings: pullToRefreshSettings)
