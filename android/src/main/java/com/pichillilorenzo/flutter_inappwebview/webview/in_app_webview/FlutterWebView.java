@@ -1,5 +1,6 @@
 package com.pichillilorenzo.flutter_inappwebview.webview.in_app_webview;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
@@ -89,7 +90,12 @@ public class FlutterWebView implements PlatformWebView {
     return pullToRefreshLayout != null ? pullToRefreshLayout : webView;
   }
 
+  @SuppressLint("RestrictedApi")
   public void makeInitialLoad(HashMap<String, Object> params) {
+    if (webView == null) {
+      return;
+    }
+
     Integer windowId = (Integer) params.get("windowId");
     Map<String, Object> initialUrlRequest = (Map<String, Object>) params.get("initialUrlRequest");
     final String initialFile = (String) params.get("initialFile");
@@ -100,6 +106,23 @@ public class FlutterWebView implements PlatformWebView {
       if (resultMsg != null) {
         ((WebView.WebViewTransport) resultMsg.obj).setWebView(webView);
         resultMsg.sendToTarget();
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+          // for some reason, if a WebView is created using a window id,
+          // the initial plugin and user scripts injected
+          // with WebViewCompat.addDocumentStartJavaScript will not be added!
+          // https://github.com/pichillilorenzo/flutter_inappwebview/issues/1455
+          //
+          // Also, calling the prepareAndAddUserScripts method right after won't work,
+          // so use the View.post method here.
+          webView.post(new Runnable() {
+            @Override
+            public void run() {
+              if (webView != null) {
+                webView.prepareAndAddUserScripts();
+              }
+            }
+          });
+        }
       }
     } else {
       if (initialFile != null) {
@@ -146,6 +169,9 @@ public class FlutterWebView implements PlatformWebView {
           }
           if (webView.inAppWebViewChromeClient != null) {
             webView.inAppWebViewChromeClient.dispose();
+          }
+          if (webView.inAppWebViewClientCompat != null) {
+            webView.inAppWebViewClientCompat.dispose();
           }
           if (webView.inAppWebViewClient != null) {
             webView.inAppWebViewClient.dispose();
